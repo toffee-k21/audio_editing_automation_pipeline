@@ -16,7 +16,7 @@ client = genai.Client(
 
 # ---------------- CONFIG ----------------
 
-MODEL = "gemini-2.5-flash"
+MODEL = "gemini-3.6-flash"
 
 # -------------------------------------
 
@@ -65,7 +65,7 @@ Rules:
 - treble: -5 to 5 dB
 - presence: -3 to 3 dB
 - compression: 1 to 5
-- noise_reduction: 5 to 25
+- noise_reduction: 20 to 40
 
 Avoid excessive bass, harsh treble, and unnatural voice processing.
 """
@@ -92,7 +92,7 @@ Avoid excessive bass, harsh treble, and unnatural voice processing.
     settings["presence"] = max(-3, min(3, settings["presence"]))
     settings["compression"] = max(1, min(5, settings["compression"]))
     settings["noise_reduction"] = max(
-        5, min(25, settings["noise_reduction"])
+        20, min(40, settings["noise_reduction"])
     )
 
     print("AI recommended settings:")
@@ -110,14 +110,16 @@ def enhance_audio(input_audio, output_audio, settings):
     noise = settings["noise_reduction"]
 
     filters = (
-        f"afftdn=nf=-{noise},"
-        f"bass=g={bass},"
-        f"treble=g={treble},"
-        f"equalizer=f=3000:t=q:w=1:g={presence},"
-        f"acompressor=threshold=0.125:ratio={compression}:"
-        f"attack=20:release=250,"
-        f"loudnorm=I=-16:TP=-1.5:LRA=11"
-    )
+    "highpass=f=75,"
+    "lowpass=f=15000,"
+    "afftdn=nf=-30,"
+    "equalizer=f=120:t=q:w=1:g=3,"
+    "equalizer=f=250:t=q:w=1:g=-2,"
+    "equalizer=f=3500:t=q:w=1:g=3,"
+    "equalizer=f=7000:t=q:w=1:g=1.5,"
+    "acompressor=threshold=0.089:ratio=3:attack=10:release=150,"
+    "loudnorm=I=-16:TP=-1.5:LRA=7"
+)
 
     run([
         "ffmpeg", "-y",
@@ -150,13 +152,13 @@ def main():
         print("Usage: python main.py input_video.mp4")
         return
 
-    video = sys.argv[1]
+    video = "input/"+sys.argv[1]
 
     if not os.path.exists(video):
         print("Video file not found.")
         return
 
-    output_video = "enhanced_" + os.path.basename(video)
+    output_video = "output/" + "enhanced_" + os.path.basename(video)
 
     with tempfile.TemporaryDirectory() as temp:
 
